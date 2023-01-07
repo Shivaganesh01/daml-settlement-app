@@ -62,6 +62,8 @@ name = script do
   regulator <- allocateParty "regulator"
   asset1 <- submit party do
     createCmd Asset with assetQuantity = 10, assetName = "TV", assetObserver = regulator, ..
+  asset2 <- submit party do
+    createCmd Asset with assetQuantity = 100, assetName = "Mobile", assetObserver = regulator, ..
   settlementAuth <- submit party do
     createCmd AssetQuantityUpdateAuthority with party, assetName = "TV", regulator = regulator
   sId <- submit regulator do
