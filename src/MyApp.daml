@@ -1,0 +1,92 @@
+module MyApp where
+
+import Daml.Script
+
+-- ASSET - Asset has name and quantity
+template Asset
+  with
+    assetQuantity: Int
+    assetName: Text
+    party : Party
+    assetObserver: Party
+  where
+    signatory party
+    key(assetName, party): (Text,Party)
+    maintainer key._2
+    observer assetObserver
+    choice UpdateAssetQuantity : ContractId Asset with
+       assetNewQuantity : Int
+     controller party
+      do
+        create this with assetQuantity = assetNewQuantity
+
+-- Asset quantity update authority given to regulator
+template AssetQuantityUpdateAuthority
+  with
+    assetName: Text
+    party : Party
+    regulator: Party
+  where
+    signatory party
+    key(assetName, party): (Text,Party)
+    maintainer key._2
+    observer regulator
+    choice Auth_UpdateAsset : ContractId Asset
+      with
+       assetCid : ContractId Asset
+       assetNewQuantity : Int
+     controller regulator
+      do
+        exercise assetCid UpdateAssetQuantity with ..
+
+-- Simple Settlement Process wherein regulator as part of settlement updates the assets quantity
+template Settlement
+  with
+    settlementSeqNo : Int
+    regulator : Party
+    authCid: ContractId AssetQuantityUpdateAuthority
+    assetCid: ContractId Asset
+  where
+    signatory regulator
+    let settlementId = "SETTLEMENT-" <> show settlementSeqNo
+    key(settlementId, regulator): (Text,Party)
+    maintainer key._2
+    choice SettleThings : (ContractId Asset)
+     controller regulator
+      do
+        exercise authCid Auth_UpdateAsset with assetCid, assetNewQuantity = 100
+
+
+name = script do
+  party <- allocateParty "party"
+  regulator <- allocateParty "regulator"
+  asset1 <- submit party do
+    createCmd Asset with assetQuantity = 10, assetName = "TV", assetObserver = regulator, ..
+  settlementAuth <- submit party do
+    createCmd AssetQuantityUpdateAuthority with party, assetName = "TV", regulator = regulator
+  sId <- submit regulator do
+    createAndExerciseCmd @Settlement 
+      Settlement with settlementSeqNo = 1, authCid = settlementAuth, assetCid = asset1, .. 
+      SettleThings
+  return ()
+  
+
+-- DAML BLOCK TO CHECK MULTIPLE EXERCISE ON SAME OBJECT
+-- template Value1
+--   with
+--     assetQuantity: Int
+--     party : Party
+--   where
+--     signatory party
+--     key(assetQuantity, party): (Int,Party)
+--     maintainer key._2
+--     choice Call : ContractId Asset with
+--        assetNewQuantity : Int
+--      controller party
+--         do
+--           let assetName = "KEY"
+--           asset1 <- create Asset with assetQuantity = assetNewQuantity, ..
+--           valueData <- fetch asset1
+--           val2 <- exercise asset1 Auth_UpdateAsset with assetNewQuantity = assetNewQuantity + 1
+--           val3 <- exerciseByKey @Asset (assetName, party)  Auth_UpdateAsset with assetNewQuantity = assetNewQuantity + 5
+--           exercise val3 Auth_UpdateAsset with assetNewQuantity = assetNewQuantity + 10

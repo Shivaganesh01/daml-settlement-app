@@ -1,0 +1,10 @@
+sdk-version: 2.5.0
+name: daml-seettlement-app
+source: src
+version: 0.0.1
+build-options:
+  - --target=1.15
+dependencies:
+  - daml-prim
+  - daml-stdlib
+  - daml-script
