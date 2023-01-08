@@ -14,12 +14,12 @@ jobs:
            run: |
              daml version
          - name: Checkout
-           uses: actions/checkout@v2
+           uses: actions/checkout@v3
            with:
-             path: master
+             path: daml-settlement-app
          - name: Run test
            run: |
-             cd master
+             cd daml-settlement-app
              ls -al
              daml build
              daml test
