@@ -1,5 +1,5 @@
 sdk-version: 2.5.0
-name: daml-seettlement-app
+name: daml-settlement-app
 source: src
 version: 0.0.1
 build-options:
